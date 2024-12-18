@@ -1,0 +1,91 @@
+import random
+import numpy as np
+
+# Define the fitness function
+def fitness_function(solution):
+    """
+    Example fitness function: Sphere function
+    Minimizes the sum of squares of the variables.
+    """
+    return sum(x**2 for x in solution)
+
+# GEA Parameters
+POPULATION_SIZE = 100
+CHROMOSOME_LENGTH = 10  # Number of genes
+GENE_RANGE = (-10, 10)  # Range of gene values
+MUTATION_RATE = 0.1
+CROSSOVER_RATE = 0.8
+MAX_GENERATIONS = 100
+
+# Initialize the population
+def initialize_population():
+    return [np.random.uniform(GENE_RANGE[0], GENE_RANGE[1], CHROMOSOME_LENGTH) for _ in range(POPULATION_SIZE)]
+
+# Gene expression function (simulates transcription/translation)
+def express_genes(chromosome):
+    """
+    Example gene expression: normalize gene values.
+    """
+    return [gene / abs(max(chromosome)) if max(chromosome) != 0 else gene for gene in chromosome]
+
+# Selection function (roulette wheel selection)
+def select_parents(population, fitness_scores):
+    total_fitness = sum(fitness_scores)
+    probabilities = [fitness / total_fitness for fitness in fitness_scores]
+    parent1 = population[np.random.choice(len(population), p=probabilities)]
+    parent2 = population[np.random.choice(len(population), p=probabilities)]
+    return parent1, parent2
+
+# Crossover function
+def crossover(parent1, parent2):
+    if random.random() < CROSSOVER_RATE:
+        point = random.randint(1, CHROMOSOME_LENGTH - 1)
+        child1 = np.concatenate((parent1[:point], parent2[point:]))
+        child2 = np.concatenate((parent2[:point], parent1[point:]))
+        return child1, child2
+    return parent1, parent2
+
+# Mutation function
+def mutate(chromosome):
+    for i in range(CHROMOSOME_LENGTH):
+        if random.random() < MUTATION_RATE:
+            chromosome[i] = np.random.uniform(GENE_RANGE[0], GENE_RANGE[1])
+    return chromosome
+
+# Main GEA algorithm
+def gene_expression_algorithm():
+    # Step 1: Initialize population
+    population = initialize_population()
+
+    for generation in range(MAX_GENERATIONS):
+        # Step 2: Evaluate fitness
+        expressed_population = [express_genes(chromosome) for chromosome in population]
+        fitness_scores = [1 / (1 + fitness_function(chromosome)) for chromosome in expressed_population]  # Minimize
+
+        # Track the best solution
+        best_index = np.argmax(fitness_scores)
+        best_solution = expressed_population[best_index]
+        best_fitness = fitness_scores[best_index]
+
+        print(f"Generation {generation}: Best Fitness = {best_fitness}")
+
+        # Step 3: Generate new population
+        new_population = []
+        while len(new_population) < POPULATION_SIZE:
+            parent1, parent2 = select_parents(population, fitness_scores)
+            child1, child2 = crossover(parent1, parent2)
+            child1 = mutate(child1)
+            child2 = mutate(child2)
+            new_population.extend([child1, child2])
+
+        # Update population
+        population = new_population[:POPULATION_SIZE]
+
+    # Return the best solution found
+    return best_solution
+
+# Run the GEA
+if __name__ == "__main__":
+    best_solution = gene_expression_algorithm()
+    print("Best Solution Found:", best_solution)
+    print("Fitness of Best Solution:", fitness_function(best_solution))
